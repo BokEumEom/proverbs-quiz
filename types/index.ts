@@ -30,11 +30,13 @@ export interface QuizQuestion {
 // 퀴즈 결과 인터페이스
 export interface QuizResult {
   quizId: string
+  quizType: QuizType // 퀴즈 유형
   score: number
   correctCount: number
   wrongCount: number
   timeSpent: number
   completedAt: string
+  totalQuestions: number // 전체 문제 수
 }
 
 // 일일 도전 과제 인터페이스

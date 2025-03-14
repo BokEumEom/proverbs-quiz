@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import dynamic from "next/dynamic"
 import { useSearchParams } from "next/navigation"
 import { useChallenge } from "@/contexts/challenge-context"
+import { OX_QUIZ_DATA } from "@/constants/quiz/ox-quiz"
 
 // 동적으로 Confetti 컴포넌트 불러오기 (필요할 때만 로드)
 const Confetti = dynamic(() => import("@/components/confetti"), {
@@ -19,80 +20,17 @@ const Confetti = dynamic(() => import("@/components/confetti"), {
 })
 
 // O/X 퀴즈 데이터 (10개로 확장)
-const quizData = [
-  {
-    id: 1,
-    proverb: "소 잃고 외양간 고친다.",
-    correct: true,
-    explanation: "이 속담은 맞습니다. 일이 잘못된 뒤에야 후회하고 대책을 세우는 것을 의미합니다.",
-  },
-  {
-    id: 2,
-    proverb: "호랑이에게 날개를 달았다.",
-    correct: false,
-    explanation:
-      "올바른 속담은 '호랑이에게 날개를 달면 못 잡는다'입니다. 강한 사람에게 더 힘을 실어주면 감당하기 어렵다는 의미입니다.",
-  },
-  {
-    id: 3,
-    proverb: "가는 말이 고와야 오는 말이 곱다.",
-    correct: true,
-    explanation: "이 속담은 맞습니다. 상대방에게 좋게 대하면 자신도 좋은 대접을 받는다는 의미입니다.",
-  },
-  {
-    id: 4,
-    proverb: "낮말은 새가 듣고 밤말은 쥐가 본다.",
-    correct: false,
-    explanation:
-      "올바른 속담은 '낮말은 새가 듣고 밤말은 쥐가 듣는다'입니다. 아무리 비밀스럽게 말해도 언젠가는 새어나간다는 의미입니다.",
-  },
-  {
-    id: 5,
-    proverb: "원숭이도 나무에서 떨어진다.",
-    correct: true,
-    explanation: "이 속담은 맞습니다. 아무리 능숙한 사람도 실수할 수 있다는 의미입니다.",
-  },
-  {
-    id: 6,
-    proverb: "발 없는 말이 천 리 간다.",
-    correct: true,
-    explanation: "이 속담은 맞습니다. 소문은 빠르게 퍼진다는 의미입니다.",
-  },
-  {
-    id: 7,
-    proverb: "고래 싸움에 새우 등 터진다.",
-    correct: true,
-    explanation: "이 속담은 맞습니다. 강한 자들의 다툼에 약한 자가 피해를 입는다는 의미입니다.",
-  },
-  {
-    id: 8,
-    proverb: "바늘 도둑이 황소 도둑 된다.",
-    correct: false,
-    explanation: "올바른 속담은 '바늘 도둑이 소 도둑 된다'입니다. 작은 잘못이 큰 잘못으로 이어진다는 의미입니다.",
-  },
-  {
-    id: 9,
-    proverb: "꿩 대신 닭이 우는 법이다.",
-    correct: false,
-    explanation: "올바른 속담은 '꿩 대신 닭이다'입니다. 원하는 것이 없을 때 비슷한 것으로 대체한다는 의미입니다.",
-  },
-  {
-    id: 10,
-    proverb: "세 살 버릇 여든까지 간다.",
-    correct: true,
-    explanation: "이 속담은 맞습니다. 어릴 때 들인 습관이 평생 간다는 의미입니다.",
-  },
-]
+const quizData = OX_QUIZ_DATA
 
 // 메모이제이션된 퀴즈 문제 컴포넌트
-const QuizQuestion = memo(({ proverb }: { proverb: string }) => (
+const QuizQuestion = memo(({ question }: { question: string }) => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -10 }}
     className="text-lg font-medium text-center mb-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 w-full"
   >
-    "{proverb}"
+    "{question}"
   </motion.div>
 ))
 
@@ -143,7 +81,7 @@ export default function OXQuiz() {
       setSelectedAnswer(answer)
       setShowExplanation(true)
 
-      const isCorrect = answer === quizData[currentQuestion].correct
+      const isCorrect = answer === (quizData[currentQuestion].answer === "true")
 
       if (isCorrect) {
         setScore((prev) => prev + 1)
@@ -245,35 +183,35 @@ export default function OXQuiz() {
           </CardHeader>
           <CardContent className="flex flex-col items-center">
             <AnimatePresence mode="wait">
-              <QuizQuestion key={currentQuestion} proverb={activeQuizData[currentQuestion].proverb} />
+              <QuizQuestion key={currentQuestion} question={activeQuizData[currentQuestion].question} />
             </AnimatePresence>
 
             {!showExplanation ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex gap-4 w-full max-w-xs"
+                className="flex justify-center gap-4 w-full"
               >
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button
                     onClick={() => handleAnswer(true)}
-                    className="h-16 flex-1 rounded-xl bg-green-500 hover:bg-green-600 shadow-md"
+                    className="h-20 w-20 rounded-full bg-green-500 hover:bg-green-600"
                   >
-                    <Check className="h-8 w-8" />
+                    <Check className="h-10 w-10" />
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button
                     onClick={() => handleAnswer(false)}
-                    className="h-16 flex-1 rounded-xl bg-red-500 hover:bg-red-600 shadow-md"
+                    className="h-20 w-20 rounded-full bg-red-500 hover:bg-red-600"
                   >
-                    <X className="h-8 w-8" />
+                    <X className="h-10 w-10" />
                   </Button>
                 </motion.div>
               </motion.div>
             ) : (
               <ExplanationBox
-                isCorrect={selectedAnswer === activeQuizData[currentQuestion].correct}
+                isCorrect={selectedAnswer === (activeQuizData[currentQuestion].answer === "true")}
                 explanation={activeQuizData[currentQuestion].explanation}
               />
             )}

@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { motion, AnimatePresence } from "framer-motion"
 import dynamic from "next/dynamic"
+import { PICTURE_QUIZ_DATA } from "@/constants/quiz/picture-quiz"
 
 // 동적으로 Confetti 컴포넌트 불러오기 (필요할 때만 로드)
 const Confetti = dynamic(() => import("@/components/confetti"), {
@@ -19,130 +20,17 @@ const Confetti = dynamic(() => import("@/components/confetti"), {
 })
 
 // 그림 연상 퀴즈 데이터 (10개로 확장)
-const quizData = [
-  {
-    id: 1,
-    image: "/placeholder.svg?height=250&width=250",
-    options: [
-      "소 잃고 외양간 고친다",
-      "가는 말이 고와야 오는 말이 곱다",
-      "낮말은 새가 듣고 밤말은 쥐가 듣는다",
-      "원숭이도 나무에서 떨어진다",
-    ],
-    correctAnswer: 0,
-    explanation:
-      "이 그림은 '소 잃고 외양간 고친다'를 나타냅니다. 일이 잘못된 뒤에야 후회하고 대책을 세우는 것을 의미합니다.",
-  },
-  {
-    id: 2,
-    image: "/placeholder.svg?height=250&width=250",
-    options: [
-      "첫술에 배부르랴",
-      "가는 말이 고와야 오는 말이 곱다",
-      "호랑이에게 날개를 달면 못 잡는다",
-      "세 살 버릇 여든까지 간다",
-    ],
-    correctAnswer: 1,
-    explanation:
-      "이 그림은 '가는 말이 고와야 오는 말이 곱다'를 나타냅니다. 상대방에게 좋게 대하면 자신도 좋은 대접을 받는다는 의미입니다.",
-  },
-  {
-    id: 3,
-    image: "/placeholder.svg?height=250&width=250",
-    options: [
-      "소문난 잔치에 먹을 것 없다",
-      "서당개 삼 년이면 풍월을 읊는다",
-      "낮말은 새가 듣고 밤말은 쥐가 듣는다",
-      "가랑비에 옷 젖는 줄 모른다",
-    ],
-    correctAnswer: 2,
-    explanation:
-      "이 그림은 '낮말은 새가 듣고 밤말은 쥐가 듣는다'를 나타냅니다. 아무리 비밀스럽게 말해도 언젠가는 새어나간다는 의미입니다.",
-  },
-  {
-    id: 4,
-    image: "/placeholder.svg?height=250&width=250",
-    options: [
-      "고래 싸움에 새우 등 터진다",
-      "원숭이도 나무에서 떨어진다",
-      "바늘 도둑이 소 도둑 된다",
-      "첫술에 배부르랴",
-    ],
-    correctAnswer: 3,
-    explanation:
-      "이 그림은 '첫술에 배부르랴'를 나타냅니다. 일을 시작한 초기에 큰 성과를 기대하기는 어렵다는 의미입니다.",
-  },
-  {
-    id: 5,
-    image: "/placeholder.svg?height=250&width=250",
-    options: ["고양이에게 생선을 맡긴다", "원숭이도 나무에서 떨어진다", "꿩 대신 닭이다", "천 리 길도 한 걸음부터"],
-    correctAnswer: 1,
-    explanation:
-      "이 그림은 '원숭이도 나무에서 떨어진다'를 나타냅니다. 아무리 능숙한 사람도 실수할 수 있다는 의미입니다.",
-  },
-  {
-    id: 6,
-    image: "/placeholder.svg?height=250&width=250",
-    options: ["발 없는 말이 천 리 간다", "병 주고 약 준다", "바늘 도둑이 소 도둑 된다", "불난 집에 부채질한다"],
-    correctAnswer: 0,
-    explanation: "이 그림은 '발 없는 말이 천 리 간다'를 나타냅니다. 소문은 빠르게 퍼진다는 의미입니다.",
-  },
-  {
-    id: 7,
-    image: "/placeholder.svg?height=250&width=250",
-    options: [
-      "가랑비에 옷 젖는 줄 모른다",
-      "고래 싸움에 새우 등 터진다",
-      "구슬이 서 말이라도 꿰어야 보배다",
-      "공든 탑이 무너지랴",
-    ],
-    correctAnswer: 1,
-    explanation:
-      "이 그림은 '고래 싸움에 새우 등 터진다'를 나타냅니다. 강한 자들의 다툼에 약한 자가 피해를 입는다는 의미입니다.",
-  },
-  {
-    id: 8,
-    image: "/placeholder.svg?height=250&width=250",
-    options: [
-      "세 살 버릇 여든까지 간다",
-      "소문난 잔치에 먹을 것 없다",
-      "서당개 삼 년이면 풍월을 읊는다",
-      "시작이 반이다",
-    ],
-    correctAnswer: 0,
-    explanation: "이 그림은 '세 살 버릇 여든까지 간다'를 나타냅니다. 어릴 때 들인 습관이 평생 간다는 의미입니다.",
-  },
-  {
-    id: 9,
-    image: "/placeholder.svg?height=250&width=250",
-    options: [
-      "말 한마디에 천 냥 빚을 갚는다",
-      "믿는 도끼에 발등 찍힌다",
-      "모로 가도 서울만 가면 된다",
-      "못된 송아지 엉덩이에 뿔 난다",
-    ],
-    correctAnswer: 1,
-    explanation: "이 그림은 '믿는 도끼에 발등 찍힌다'를 나타냅니다. 가장 믿었던 사람에게 배신당한다는 의미입니다.",
-  },
-  {
-    id: 10,
-    image: "/placeholder.svg?height=250&width=250",
-    options: ["가는 날이 장날이다", "개구리 올챙이 적 생각 못한다", "고양이 쥐 생각 한다", "공든 탑이 무너지랴"],
-    correctAnswer: 1,
-    explanation:
-      "이 그림은 '개구리 올챙이 적 생각 못한다'를 나타냅니다. 자신의 과거를 잊고 남을 무시한다는 의미입니다.",
-  },
-]
+const quizData = PICTURE_QUIZ_DATA
 
 // 메모이제이션된 퀴즈 이미지 컴포넌트
-const QuizImage = memo(({ image }: { image: string }) => (
+const QuizImage = memo(({ imageUrl }: { imageUrl: string }) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.9 }}
     animate={{ opacity: 1, scale: 1 }}
     exit={{ opacity: 0, scale: 0.9 }}
     className="border rounded-lg overflow-hidden shadow-sm w-full"
   >
-    <Image src={image || "/placeholder.svg"} alt="속담 그림" width={250} height={250} className="w-full h-auto" />
+    <Image src={imageUrl || "/placeholder.svg"} alt="속담 그림" width={250} height={250} className="w-full h-auto" />
   </motion.div>
 ))
 
@@ -183,7 +71,8 @@ export default function PictureQuiz() {
 
     setShowExplanation(true)
 
-    const isCorrect = selectedAnswer === quizData[currentQuestion].correctAnswer
+    // 선택한 답변의 텍스트와 정답이 일치하는지 확인
+    const isCorrect = quizData[currentQuestion].options?.[selectedAnswer] === quizData[currentQuestion].answer
 
     if (isCorrect) {
       setScore((prev) => prev + 1)
@@ -192,7 +81,7 @@ export default function PictureQuiz() {
         navigator.vibrate(100)
       }
     }
-  }, [currentQuestion, selectedAnswer])
+  }, [currentQuestion, selectedAnswer, quizData])
 
   const handleNextQuestion = useCallback(() => {
     setSelectedAnswer(null)
@@ -247,7 +136,7 @@ export default function PictureQuiz() {
           <CardContent className="flex flex-col items-center">
             <div className="w-full flex justify-center mb-6">
               <AnimatePresence mode="wait">
-                <QuizImage key={currentQuestion} image={quizData[currentQuestion].image} />
+                <QuizImage key={currentQuestion} imageUrl={quizData[currentQuestion].imageUrl || "/placeholder.svg"} />
               </AnimatePresence>
             </div>
 
@@ -257,7 +146,7 @@ export default function PictureQuiz() {
               className="w-full space-y-3"
             >
               <AnimatePresence>
-                {quizData[currentQuestion].options.map((option, index) => (
+                {quizData[currentQuestion].options?.map((option, index) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, x: -10 }}
@@ -279,9 +168,9 @@ export default function PictureQuiz() {
 
             {showExplanation && (
               <ExplanationBox
-                isCorrect={selectedAnswer === quizData[currentQuestion].correctAnswer}
+                isCorrect={quizData[currentQuestion].options?.[selectedAnswer as number] === quizData[currentQuestion].answer}
                 explanation={quizData[currentQuestion].explanation}
-                correctOption={quizData[currentQuestion].options[quizData[currentQuestion].correctAnswer]}
+                correctOption={quizData[currentQuestion].answer}
               />
             )}
           </CardContent>

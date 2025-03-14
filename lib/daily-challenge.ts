@@ -1,20 +1,8 @@
-import { DailyChallenge, QuizType } from "@/types"
+import { QuizType, DailyChallenge } from "@/types"
 import { QUIZ_CONFIG, STREAK_REWARDS, STORAGE_KEYS } from "@/constants"
 
 // 일일 도전 과제 타입 정의
 export type ChallengeType = "ox" | "initial-sound" | "picture" | "blank"
-
-export interface DailyChallenge {
-  id: string
-  date: string // ISO 형식 날짜 문자열
-  type: ChallengeType
-  title: string
-  description: string
-  questionCount: number
-  reward: number // 포인트 보상
-  completed: boolean
-  streak?: number // 연속 출석 일수
-}
 
 // 연속 출석 보상 계산
 export function calculateStreakBonus(streak: number): number {

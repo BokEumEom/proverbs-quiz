@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { motion, AnimatePresence } from "framer-motion"
 import dynamic from "next/dynamic"
+import { BLANK_QUIZ_DATA } from "@/constants/quiz/blank-quiz"
 
 // 동적으로 Confetti 컴포넌트 불러오기 (필요할 때만 로드)
 const Confetti = dynamic(() => import("@/components/confetti"), {
@@ -18,92 +19,17 @@ const Confetti = dynamic(() => import("@/components/confetti"), {
 })
 
 // 빈칸 채우기 퀴즈 데이터 (10개로 확장)
-const quizData = [
-  {
-    id: 1,
-    proverb: "소 잃고 _____ 고친다.",
-    options: ["외양간", "마구간", "헛간", "우리"],
-    correctAnswer: 0,
-    explanation:
-      "완전한 속담은 '소 잃고 외양간 고친다'입니다. 일이 잘못된 뒤에야 후회하고 대책을 세우는 것을 의미합니다.",
-  },
-  {
-    id: 2,
-    proverb: "가는 말이 고와야 _____ 말이 곱다.",
-    options: ["듣는", "오는", "받는", "전하는"],
-    correctAnswer: 1,
-    explanation:
-      "완전한 속담은 '가는 말이 고와야 오는 말이 곱다'입니다. 상대방에게 좋게 대하면 자신도 좋은 대접을 받는다는 의미입니다.",
-  },
-  {
-    id: 3,
-    proverb: "낮말은 _____ 듣고 밤말은 쥐가 듣는다.",
-    options: ["바람이", "귀신이", "새가", "벽이"],
-    correctAnswer: 2,
-    explanation:
-      "완전한 속담은 '낮말은 새가 듣고 밤말은 쥐가 듣는다'입니다. 아무리 비밀스럽게 말해도 언젠가는 새어나간다는 의미입니다.",
-  },
-  {
-    id: 4,
-    proverb: "_____ 배부르랴.",
-    options: ["한 그릇에", "한 숟가락에", "한 끼에", "첫술에"],
-    correctAnswer: 3,
-    explanation: "완전한 속담은 '첫술에 배부르랴'입니다. 일을 시작한 초기에 큰 성과를 기대하기는 어렵다는 의미입니다.",
-  },
-  {
-    id: 5,
-    proverb: "원숭이도 _____ 떨어진다.",
-    options: ["높은 곳에서", "나무에서", "바위에서", "가지에서"],
-    correctAnswer: 1,
-    explanation: "완전한 속담은 '원숭이도 나무에서 떨어진다'입니다. 아무리 능숙한 사람도 실수할 수 있다는 의미입니다.",
-  },
-  {
-    id: 6,
-    proverb: "_____ 말이 천 리 간다.",
-    options: ["발 없는", "날개 없는", "입 없는", "꼬리 없는"],
-    correctAnswer: 0,
-    explanation: "완전한 속담은 '발 없는 말이 천 리 간다'입니다. 소문은 빠르게 퍼진다는 의미입니다.",
-  },
-  {
-    id: 7,
-    proverb: "고래 싸움에 _____ 터진다.",
-    options: ["물고기 등", "새우 등", "게 등", "조개 등"],
-    correctAnswer: 1,
-    explanation:
-      "완전한 속담은 '고래 싸움에 새우 등 터진다'입니다. 강한 자들의 다툼에 약한 자가 피해를 입는다는 의미입니다.",
-  },
-  {
-    id: 8,
-    proverb: "세 살 버릇 _____ 간다.",
-    options: ["여든까지", "평생", "죽을 때까지", "늙어서도"],
-    correctAnswer: 0,
-    explanation: "완전한 속담은 '세 살 버릇 여든까지 간다'입니다. 어릴 때 들인 습관이 평생 간다는 의미입니다.",
-  },
-  {
-    id: 9,
-    proverb: "믿는 _____ 발등 찍힌다.",
-    options: ["친구에게", "도끼에", "사람에게", "형제에게"],
-    correctAnswer: 1,
-    explanation: "완전한 속담은 '믿는 도끼에 발등 찍힌다'입니다. 가장 믿었던 사람에게 배신당한다는 의미입니다.",
-  },
-  {
-    id: 10,
-    proverb: "개구리 _____ 적 생각 못한다.",
-    options: ["올챙이", "알", "새끼", "어린"],
-    correctAnswer: 0,
-    explanation: "완전한 속담은 '개구리 올챙이 적 생각 못한다'입니다. 자신의 과거를 잊고 남을 무시한다는 의미입니다.",
-  },
-]
+const quizData = BLANK_QUIZ_DATA
 
 // 메모이제이션된 퀴즈 문제 컴포넌트
-const QuizQuestion = memo(({ proverb }: { proverb: string }) => (
+const QuizQuestion = memo(({ question }: { question: string }) => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -10 }}
     className="text-lg font-medium text-center mb-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 w-full"
   >
-    "{proverb}"
+    "{question}"
   </motion.div>
 ))
 
@@ -144,7 +70,8 @@ export default function BlankQuiz() {
 
     setShowExplanation(true)
 
-    const isCorrect = selectedAnswer === quizData[currentQuestion].correctAnswer
+    // 선택한 답변의 텍스트와 정답이 일치하는지 확인
+    const isCorrect = quizData[currentQuestion].options?.[selectedAnswer] === quizData[currentQuestion].answer
 
     if (isCorrect) {
       setScore((prev) => prev + 1)
@@ -153,7 +80,7 @@ export default function BlankQuiz() {
         navigator.vibrate(100)
       }
     }
-  }, [currentQuestion, selectedAnswer])
+  }, [currentQuestion, selectedAnswer, quizData])
 
   const handleNextQuestion = useCallback(() => {
     setSelectedAnswer(null)
@@ -207,7 +134,7 @@ export default function BlankQuiz() {
           </CardHeader>
           <CardContent className="flex flex-col items-center">
             <AnimatePresence mode="wait">
-              <QuizQuestion key={currentQuestion} proverb={quizData[currentQuestion].proverb} />
+              <QuizQuestion key={currentQuestion} question={quizData[currentQuestion].question} />
             </AnimatePresence>
 
             <RadioGroup
@@ -216,7 +143,7 @@ export default function BlankQuiz() {
               className="w-full space-y-3"
             >
               <AnimatePresence>
-                {quizData[currentQuestion].options.map((option, index) => (
+                {quizData[currentQuestion].options?.map((option, index) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, x: -10 }}
@@ -238,9 +165,9 @@ export default function BlankQuiz() {
 
             {showExplanation && (
               <ExplanationBox
-                isCorrect={selectedAnswer === quizData[currentQuestion].correctAnswer}
+                isCorrect={quizData[currentQuestion].options?.[selectedAnswer as number] === quizData[currentQuestion].answer}
                 explanation={quizData[currentQuestion].explanation}
-                correctOption={quizData[currentQuestion].options[quizData[currentQuestion].correctAnswer]}
+                correctOption={quizData[currentQuestion].answer}
               />
             )}
           </CardContent>
