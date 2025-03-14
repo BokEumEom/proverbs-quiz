@@ -9,12 +9,27 @@ interface BlankQuizQuestionProps {
   iconColor?: string
 }
 
+// 텍스트 파트 타입 정의
+interface TextPart {
+  text: string;
+  isBlank: boolean;
+  blankIndex?: number;
+  boxCount?: number;
+}
+
 const BlankQuizQuestion = ({ 
   question, 
   answer = "", 
   showAnswer = false,
   iconColor = "text-amber-500"
 }: BlankQuizQuestionProps) => {
+  // 실제 표시할 글자 수 계산 (따옴표 제외)
+  const effectiveAnswerLength = useMemo(() => {
+    // 따옴표를 제외한 실제 글자 수 계산
+    const strippedAnswer = answer.replace(/['"]/g, '');
+    return strippedAnswer.length;
+  }, [answer]);
+  
   // 빈칸 앞뒤로 텍스트 분리
   const parts = useMemo(() => {
     // 빈칸 패턴 (___로 표시된 부분)
@@ -24,10 +39,10 @@ const BlankQuizQuestion = ({
     const matches = [...question.matchAll(blankPattern)];
     
     if (matches.length === 0) {
-      return [{ text: question, isBlank: false }];
+      return [{ text: question, isBlank: false }] as TextPart[];
     }
     
-    const result = [];
+    const result: TextPart[] = [];
     let lastIndex = 0;
     
     matches.forEach((match, index) => {
@@ -44,8 +59,8 @@ const BlankQuizQuestion = ({
         text: match[0],
         isBlank: true,
         blankIndex: index,
-        // 정답의 글자 수만큼 네모칸 생성
-        boxCount: answer.length
+        // 따옴표를 제외한 실제 글자 수만큼 네모칸 생성 (최소 1개 보장)
+        boxCount: Math.max(1, effectiveAnswerLength)
       });
       
       lastIndex = match.index + match[0].length;
@@ -60,7 +75,14 @@ const BlankQuizQuestion = ({
     }
     
     return result;
-  }, [question, answer]);
+  }, [question, effectiveAnswerLength]);
+
+  // 디버깅용 로그 (개발 환경에서만 표시)
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Question: "${question}", Answer: "${answer}", Effective Length: ${effectiveAnswerLength}, Boxes: ${effectiveAnswerLength}`);
+    }
+  }, [question, answer, effectiveAnswerLength]);
 
   return (
     <motion.div
@@ -79,13 +101,14 @@ const BlankQuizQuestion = ({
             ) : (
               <span 
                 className="inline-flex gap-1 mx-1 my-1 align-middle relative"
-                aria-label={`빈칸 (${answer.length}글자)`}
+                aria-label={`빈칸 (${effectiveAnswerLength}글자)`}
+                data-answer-length={effectiveAnswerLength}
               >
-                {/* 네모칸 - 정답의 글자 수만큼 생성 */}
-                {Array(part.boxCount).fill(0).map((_, i) => (
+                {/* 네모칸 - 실제 글자 수만큼 생성 */}
+                {Array(part.boxCount || 1).fill(0).map((_, i) => (
                   <motion.span 
                     key={i} 
-                    className={`inline-block w-5 h-5 border rounded-sm ${
+                    className={`inline-block w-6 h-6 border rounded-sm ${
                       showAnswer 
                         ? "bg-green-100 dark:bg-green-900/30 border-green-500" 
                         : "bg-amber-100 dark:bg-amber-900/30 border-amber-500"
@@ -98,14 +121,19 @@ const BlankQuizQuestion = ({
                 
                 {/* 정답 표시 (showAnswer가 true일 때) */}
                 {showAnswer && (
-                  <motion.span 
-                    className="absolute inset-0 flex items-center justify-center text-green-700 dark:text-green-400 font-bold"
+                  <motion.div 
+                    className="absolute inset-0 flex items-center justify-center"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
                   >
-                    {answer}
-                  </motion.span>
+                    <span className={`
+                      text-green-700 dark:text-green-400 font-bold
+                      ${effectiveAnswerLength > 2 ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'}
+                    `}>
+                      {answer}
+                    </span>
+                  </motion.div>
                 )}
               </span>
             )}
