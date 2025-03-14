@@ -44,8 +44,8 @@ const BlankQuizQuestion = ({
         text: match[0],
         isBlank: true,
         blankIndex: index,
-        // 빈칸 길이에 따라 네모칸 개수 계산 (최소 2개, 최대 8개)
-        boxCount: Math.min(8, Math.max(2, Math.ceil(match[0].length / 3)))
+        // 정답의 글자 수만큼 네모칸 생성
+        boxCount: answer.length
       });
       
       lastIndex = match.index + match[0].length;
@@ -60,7 +60,7 @@ const BlankQuizQuestion = ({
     }
     
     return result;
-  }, [question]);
+  }, [question, answer]);
 
   return (
     <motion.div
@@ -79,9 +79,9 @@ const BlankQuizQuestion = ({
             ) : (
               <span 
                 className="inline-flex gap-1 mx-1 my-1 align-middle relative"
-                aria-label="빈칸"
+                aria-label={`빈칸 (${answer.length}글자)`}
               >
-                {/* 네모칸 */}
+                {/* 네모칸 - 정답의 글자 수만큼 생성 */}
                 {Array(part.boxCount).fill(0).map((_, i) => (
                   <motion.span 
                     key={i} 
