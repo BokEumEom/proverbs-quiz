@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, memo } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProverbCard from "./proverb-card";
@@ -7,66 +7,124 @@ import { Proverb } from "@/constants/proverbs";
 interface ProverbCarouselProps {
   proverbs: Proverb[];
   onComplete: (knownProverbs: number[], reviewProverbs: number[]) => void;
+  onUpdateStatus: (proverbId: number, isKnown: boolean) => void;
 }
 
-export default function ProverbCarousel({ proverbs, onComplete }: ProverbCarouselProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
+// memo로 컴포넌트 메모이제이션
+const ProverbCarousel = memo(({ 
+  proverbs, 
+  onComplete, 
+  onUpdateStatus 
+}: ProverbCarouselProps) => {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+    loop: false,
+    draggable: true,
+    skipSnaps: false
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [knownProverbs, setKnownProverbs] = useState<number[]>([]);
   const [reviewProverbs, setReviewProverbs] = useState<number[]>([]);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(true);
+  const [isSessionCompleted, setIsSessionCompleted] = useState(false);
 
   const scrollPrev = useCallback(() => {
-    if (emblaApi) emblaApi.scrollPrev();
-  }, [emblaApi]);
+    if (emblaApi && canScrollPrev) emblaApi.scrollPrev();
+  }, [emblaApi, canScrollPrev]);
 
   const scrollNext = useCallback(() => {
-    if (emblaApi) emblaApi.scrollNext();
-  }, [emblaApi]);
+    if (emblaApi && canScrollNext) emblaApi.scrollNext();
+  }, [emblaApi, canScrollNext]);
 
-  const handleKnown = () => {
+  const handleKnown = useCallback(() => {
+    if (isSessionCompleted) return;
+    
     const currentProverbId = proverbs[currentIndex].id;
-    setKnownProverbs(prev => [...prev, currentProverbId]);
-    scrollNext();
-  };
+    setKnownProverbs(prev => {
+      const newKnownProverbs = [...prev, currentProverbId];
+      // 복습 목록에서 제거
+      setReviewProverbs(prev => prev.filter(id => id !== currentProverbId));
+      return newKnownProverbs;
+    });
+    
+    // 즉시 학습 상태 업데이트
+    onUpdateStatus(currentProverbId, true);
+    
+    // 마지막 카드가 아니면 다음으로 이동
+    if (currentIndex < proverbs.length - 1) {
+      scrollNext();
+    } else if (!isSessionCompleted) {
+      // 마지막 카드면 세션 완료
+      setIsSessionCompleted(true);
+    }
+  }, [currentIndex, proverbs, scrollNext, onUpdateStatus, isSessionCompleted]);
 
-  const handleReview = () => {
+  const handleReview = useCallback(() => {
+    if (isSessionCompleted) return;
+    
     const currentProverbId = proverbs[currentIndex].id;
-    setReviewProverbs(prev => [...prev, currentProverbId]);
-    scrollNext();
-  };
+    setReviewProverbs(prev => {
+      const newReviewProverbs = [...prev, currentProverbId];
+      // 알고 있는 목록에서 제거
+      setKnownProverbs(prev => prev.filter(id => id !== currentProverbId));
+      return newReviewProverbs;
+    });
+    
+    // 즉시 학습 상태 업데이트
+    onUpdateStatus(currentProverbId, false);
+    
+    // 마지막 카드가 아니면 다음으로 이동
+    if (currentIndex < proverbs.length - 1) {
+      scrollNext();
+    } else if (!isSessionCompleted) {
+      // 마지막 카드면 세션 완료
+      setIsSessionCompleted(true);
+    }
+  }, [currentIndex, proverbs, scrollNext, onUpdateStatus, isSessionCompleted]);
 
-  // 현재 슬라이드 인덱스 업데이트
+  // 세션 완료 시 onComplete 호출
+  useEffect(() => {
+    if (isSessionCompleted) {
+      onComplete(knownProverbs, reviewProverbs);
+    }
+  }, [isSessionCompleted, knownProverbs, reviewProverbs, onComplete]);
+
+  // 현재 슬라이드 인덱스 및 스크롤 가능 상태 업데이트
   useEffect(() => {
     if (!emblaApi) return;
 
     const onSelect = () => {
       setCurrentIndex(emblaApi.selectedScrollSnap());
-      
-      // 마지막 슬라이드에 도달했는지 확인
-      if (emblaApi.selectedScrollSnap() === proverbs.length - 1) {
-        // 마지막 카드에서 다음으로 넘어가면 완료 처리
-        const handleComplete = () => {
-          if (emblaApi.selectedScrollSnap() === proverbs.length - 1 && !isCompleted) {
-            setIsCompleted(true);
-            onComplete(knownProverbs, reviewProverbs);
-          }
-        };
-        
-        emblaApi.on('settle', handleComplete);
-        return () => {
-          emblaApi.off('settle', handleComplete);
-        };
-      }
+      setCanScrollPrev(emblaApi.canScrollPrev());
+      setCanScrollNext(emblaApi.canScrollNext());
     };
 
     emblaApi.on('select', onSelect);
-    onSelect(); // 초기 인덱스 설정
+    emblaApi.on('reInit', onSelect);
+    onSelect(); // 초기 상태 설정
 
     return () => {
       emblaApi.off('select', onSelect);
+      emblaApi.off('reInit', onSelect);
     };
-  }, [emblaApi, proverbs.length, knownProverbs, reviewProverbs, onComplete, isCompleted]);
+  }, [emblaApi]);
+
+  // 마지막 카드에서 다음으로 넘어가면 완료 처리
+  useEffect(() => {
+    if (!emblaApi || isSessionCompleted) return;
+
+    const handleComplete = () => {
+      if (currentIndex === proverbs.length - 1 && !canScrollNext) {
+        setIsSessionCompleted(true);
+      }
+    };
+
+    emblaApi.on('settle', handleComplete);
+    
+    return () => {
+      emblaApi.off('settle', handleComplete);
+    };
+  }, [emblaApi, currentIndex, proverbs.length, canScrollNext, isSessionCompleted]);
 
   return (
     <div className="relative">
@@ -102,23 +160,25 @@ export default function ProverbCarousel({ proverbs, onComplete }: ProverbCarouse
       <div className="flex justify-between mt-6">
         <button 
           onClick={scrollPrev}
-          disabled={currentIndex === 0}
+          disabled={!canScrollPrev}
           className={`p-2 rounded-full ${
-            currentIndex === 0 
+            !canScrollPrev
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
               : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600'
           }`}
+          aria-label="이전 카드"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
         <button 
           onClick={scrollNext}
-          disabled={currentIndex === proverbs.length - 1}
+          disabled={!canScrollNext}
           className={`p-2 rounded-full ${
-            currentIndex === proverbs.length - 1
+            !canScrollNext
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
               : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600'
           }`}
+          aria-label="다음 카드"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
@@ -129,4 +189,8 @@ export default function ProverbCarousel({ proverbs, onComplete }: ProverbCarouse
       </p>
     </div>
   );
-} 
+});
+
+ProverbCarousel.displayName = 'ProverbCarousel';
+
+export default ProverbCarousel; 

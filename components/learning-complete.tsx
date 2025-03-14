@@ -1,18 +1,22 @@
 import { Button } from "@/components/ui/button";
-import { Award, RotateCcw } from "lucide-react";
+import { Award, RotateCcw, BookOpen, RefreshCw } from "lucide-react";
 
 interface LearningCompleteProps {
   totalCount: number;
   knownCount: number;
   reviewCount: number;
   onRestart: () => void;
+  onNextBatch: () => void;
+  onReviewOnly: () => void;
 }
 
 export default function LearningComplete({ 
   totalCount, 
   knownCount, 
   reviewCount, 
-  onRestart 
+  onRestart,
+  onNextBatch,
+  onReviewOnly
 }: LearningCompleteProps) {
   return (
     <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
@@ -38,13 +42,36 @@ export default function LearningComplete({
         </div>
       </div>
       
-      <Button 
-        onClick={onRestart}
-        className="w-full flex items-center justify-center gap-2"
-      >
-        <RotateCcw className="h-4 w-4" />
-        다시 학습하기
-      </Button>
+      <div className="grid grid-cols-1 gap-3 w-full">
+        <Button 
+          onClick={onNextBatch}
+          className="w-full flex items-center justify-center gap-2"
+          variant="default"
+        >
+          <BookOpen className="h-4 w-4" />
+          다음 세트 학습하기
+        </Button>
+        
+        {reviewCount > 0 && (
+          <Button 
+            onClick={onReviewOnly}
+            className="w-full flex items-center justify-center gap-2"
+            variant="outline"
+          >
+            <RefreshCw className="h-4 w-4" />
+            복습이 필요한 속담만 학습하기
+          </Button>
+        )}
+        
+        <Button 
+          onClick={onRestart}
+          className="w-full flex items-center justify-center gap-2"
+          variant="ghost"
+        >
+          <RotateCcw className="h-4 w-4" />
+          처음부터 다시 학습하기
+        </Button>
+      </div>
     </div>
   );
 } 
