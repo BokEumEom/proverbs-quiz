@@ -1,33 +1,48 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Trophy, Clock, CheckCircle, Loader2 } from "lucide-react"
+import { Trophy, Clock, CheckCircle, Loader2, ArrowRight } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useToast } from "@/components/ui/use-toast"
+import Link from "next/link"
 
 interface DailyChallengeProps {
   challenge: {
+    id: string
     title: string
     description: string
     reward: number
     completed?: boolean
+    completedAt?: string
     progress?: number
     expiresIn?: string
+    type: string
+    questionCount: number
   }
-  onChallengeAccept?: (challengeId: string) => Promise<void>
+  onChallengeAccept?: (challengeId: string) => Promise<boolean>
+  onChallengeComplete?: (challengeId: string) => void
+  streak?: number
 }
 
 export default function DailyChallengeCard({ 
   challenge, 
-  onChallengeAccept 
+  onChallengeAccept,
+  onChallengeComplete,
+  streak = 0
 }: DailyChallengeProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [localProgress, setLocalProgress] = useState(challenge.progress || 0)
   const [localCompleted, setLocalCompleted] = useState(challenge.completed || false)
   const { toast } = useToast()
+  
+  // 외부에서 challenge가 업데이트되면 로컬 상태도 업데이트
+  useEffect(() => {
+    setLocalProgress(challenge.progress || 0)
+    setLocalCompleted(challenge.completed || false)
+  }, [challenge])
 
   // 도전하기 버튼 클릭 핸들러
   const handleChallengeAccept = async () => {
@@ -38,7 +53,17 @@ export default function DailyChallengeCard({
     try {
       // 실제 구현에서는 onChallengeAccept 함수를 통해 서버와 통신
       if (onChallengeAccept) {
-        await onChallengeAccept("challenge-id")
+        const success = await onChallengeAccept(challenge.id)
+        
+        if (success) {
+          setLocalProgress(100)
+          setLocalCompleted(true)
+          
+          // 완료 콜백 호출
+          if (onChallengeComplete) {
+            onChallengeComplete(challenge.id)
+          }
+        }
       } else {
         // 데모 목적의 지연 및 진행 상태 업데이트
         await new Promise(resolve => setTimeout(resolve, 1000))
@@ -66,6 +91,11 @@ export default function DailyChallengeCard({
               description: `${challenge.reward} 포인트를 획득했습니다.`,
               variant: "default",
             })
+            
+            // 완료 콜백 호출
+            if (onChallengeComplete) {
+              onChallengeComplete(challenge.id)
+            }
           } else {
             toast({
               title: "진행 상황 업데이트",
@@ -88,13 +118,38 @@ export default function DailyChallengeCard({
     }
   }
 
+  // 연속 출석 보너스 표시
+  const renderStreakBonus = () => {
+    if (streak < 5) return null
+    
+    let bonusText = ""
+    if (streak >= 30) bonusText = "30일 연속 출석 보너스!"
+    else if (streak >= 20) bonusText = "20일 연속 출석 보너스!"
+    else if (streak >= 10) bonusText = "10일 연속 출석 보너스!"
+    else if (streak >= 5) bonusText = "5일 연속 출석 보너스!"
+    
+    return (
+      <motion.div 
+        className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs px-2 py-1 rounded-full"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
+        {bonusText}
+      </motion.div>
+    )
+  }
+
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 400, damping: 10 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
+      className="relative"
     >
+      {renderStreakBonus()}
+      
       <Card className="overflow-hidden border-0 shadow-sm hover:shadow-md transition-all">
         <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-4 text-white">
           <div className="flex justify-between items-start">
@@ -149,6 +204,7 @@ export default function DailyChallengeCard({
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
+                    className="flex gap-2"
                   >
                     <Button 
                       size="sm" 
@@ -159,6 +215,18 @@ export default function DailyChallengeCard({
                       <span className="flex items-center">
                         <CheckCircle className="h-4 w-4 mr-1" /> 완료됨
                       </span>
+                    </Button>
+                    
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      asChild
+                    >
+                      <Link href={`/quiz/${challenge.type}`}>
+                        <span className="flex items-center">
+                          <ArrowRight className="h-4 w-4 mr-1" /> 더 풀기
+                        </span>
+                      </Link>
                     </Button>
                   </motion.div>
                 ) : (

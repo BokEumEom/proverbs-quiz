@@ -13,6 +13,7 @@ import QuizCategories from "@/components/home/quiz-categories"
 import AchievementCard from "@/components/home/achievement-card"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
+import { completeDailyChallenge, getUserPoints, addUserPoints } from "@/lib/daily-challenge"
 
 // 애니메이션 변수 정의
 const container = {
@@ -41,6 +42,7 @@ export default function Home() {
     points: userPoints || 120,
   })
   const { toast } = useToast()
+  const [challengeCompleted, setChallengeCompleted] = useState(false)
 
   // 테마 마운트 확인
   useEffect(() => {
@@ -54,30 +56,58 @@ export default function Home() {
     }
   }, [userPoints])
 
+  // 도전 과제 완료 시 UI 업데이트를 위한 효과
+  useEffect(() => {
+    if (dailyChallenge?.completed) {
+      setChallengeCompleted(true)
+    }
+  }, [dailyChallenge])
+
   // 도전 과제 수락 핸들러
   const handleChallengeAccept = async (challengeId: string) => {
     try {
       // 실제 구현에서는 completeChallenge 함수를 통해 서버와 통신
       if (completeChallenge) {
-        await completeChallenge(challengeId)
+        const result = await completeChallenge(challengeId)
+        if (result) {
+          setChallengeCompleted(true)
+          
+          // 포인트 업데이트
+          const challengeReward = dailyChallenge?.reward || 0
+          setCurrentUser(prev => ({
+            ...prev,
+            points: prev.points + challengeReward
+          }))
+          
+          toast({
+            title: "도전 완료!",
+            description: `${challengeReward} 포인트를 획득했습니다.`,
+          })
+        }
+        return result
       } else {
-        // 데모 목적의 지연
-        await new Promise(resolve => setTimeout(resolve, 1500))
+        // 로컬 구현 - 도전 과제 완료 처리
+        const result = completeDailyChallenge(challengeId)
         
-        // 포인트 업데이트 (실제로는 서버에서 처리)
-        const challengeReward = dailyChallenge?.reward || 0
-        setCurrentUser(prev => ({
-          ...prev,
-          points: prev.points + challengeReward
-        }))
+        if (result.success) {
+          setChallengeCompleted(true)
+          
+          // 포인트 업데이트
+          setCurrentUser(prev => ({
+            ...prev,
+            points: result.newTotal
+          }))
+          
+          toast({
+            title: "도전 완료!",
+            description: `${result.points} 포인트를 획득했습니다.`,
+          })
+        }
         
-        toast({
-          title: "도전 완료!",
-          description: `${challengeReward} 포인트를 획득했습니다.`,
-        })
+        return result.success
       }
-      return true
     } catch (error) {
+      console.error("도전 과제 처리 중 오류:", error)
       toast({
         title: "오류 발생",
         description: "도전 과제를 처리하는 중 문제가 발생했습니다.",
@@ -85,6 +115,18 @@ export default function Home() {
       })
       return false
     }
+  }
+  
+  // 도전 과제 완료 콜백
+  const handleChallengeComplete = (challengeId: string) => {
+    // 도전 과제 완료 후 추가 작업이 필요한 경우
+    console.log(`도전 과제 ${challengeId} 완료됨`)
+    
+    // 사용자 통계 업데이트
+    setCurrentUser(prev => ({
+      ...prev,
+      totalQuizzes: prev.totalQuizzes + 1
+    }))
   }
 
   return (
@@ -162,6 +204,8 @@ export default function Home() {
             <DailyChallengeCard 
               challenge={dailyChallenge} 
               onChallengeAccept={handleChallengeAccept}
+              onChallengeComplete={handleChallengeComplete}
+              streak={currentUser.streak}
             />
           ) : (
             <Card className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg p-4 text-center">

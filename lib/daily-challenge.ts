@@ -125,13 +125,58 @@ export function getUserPoints(): number {
   }
 }
 
-export function addUserPoints(points: number): void {
-  if (typeof window === "undefined") return
+// 포인트 적립 함수 개선
+export function addUserPoints(points: number, reason?: string): number {
+  if (typeof window === "undefined") return 0
 
   const storedProgress = localStorage.getItem(STORAGE_KEYS.USER_PROGRESS)
-  const progress = storedProgress ? JSON.parse(storedProgress) : { totalPoints: 0 }
+  const progress = storedProgress ? JSON.parse(storedProgress) : { 
+    totalPoints: 0,
+    pointsHistory: []
+  }
   
-  progress.totalPoints = (progress.totalPoints || 0) + points
+  const currentPoints = progress.totalPoints || 0
+  const newTotal = currentPoints + points
+  
+  // 포인트 내역 추가
+  progress.totalPoints = newTotal
+  progress.pointsHistory = progress.pointsHistory || []
+  progress.pointsHistory.push({
+    amount: points,
+    reason: reason || "도전 과제 완료",
+    date: new Date().toISOString()
+  })
+  
+  // 최근 30개 내역만 유지
+  if (progress.pointsHistory.length > 30) {
+    progress.pointsHistory = progress.pointsHistory.slice(-30)
+  }
+  
   localStorage.setItem(STORAGE_KEYS.USER_PROGRESS, JSON.stringify(progress))
+  return newTotal
+}
+
+// 도전 과제 완료 함수 추가
+export function completeDailyChallenge(challengeId: string): { 
+  success: boolean, 
+  points: number,
+  newTotal: number
+} {
+  const challenge = getDailyChallengeFromStorage()
+  
+  if (!challenge || challenge.id !== challengeId || challenge.completed) {
+    return { success: false, points: 0, newTotal: getUserPoints() }
+  }
+  
+  // 도전 과제 완료 처리
+  challenge.completed = true
+  challenge.completedAt = new Date().toISOString()
+  saveDailyChallengeToStorage(challenge)
+  
+  // 포인트 적립
+  const pointsEarned = challenge.reward
+  const newTotal = addUserPoints(pointsEarned, `${challenge.title} 도전 완료`)
+  
+  return { success: true, points: pointsEarned, newTotal }
 }
 
